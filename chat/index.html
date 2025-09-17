@@ -6,25 +6,11 @@
   <title>실시간 채팅</title>
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{
-      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-      background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-      height:100vh;display:flex;align-items:center;justify-content:center;
-    }
-    .chat-container{
-      background:#2c2c54;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.3);
-      width:100%;max-width:500px;height:80vh;max-height:600px;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,.1);
-    }
-    .chat-header{
-      background:linear-gradient(135deg,#40407a 0%,#2c2c54 100%);color:#fff;padding:20px;text-align:center;font-weight:bold;font-size:1.2em;position:relative;
-    }
-    .online-count{
-      position:absolute;right:20px;top:50%;transform:translateY(-50%);
-      background:rgba(255,255,255,.2);padding:5px 10px;border-radius:15px;font-size:.8em;
-    }
-    .current-user-info{
-      padding:10px 20px;background:rgba(64,64,122,.3);color:#a4b0be;font-size:.9em;text-align:center;border-bottom:1px solid #40407a
-    }
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);height:100vh;display:flex;align-items:center;justify-content:center}
+    .chat-container{background:#2c2c54;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.3);width:100%;max-width:500px;height:80vh;max-height:600px;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+    .chat-header{background:linear-gradient(135deg,#40407a 0%,#2c2c54 100%);color:#fff;padding:20px;text-align:center;font-weight:bold;font-size:1.2em;position:relative}
+    .online-count{position:absolute;right:20px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.2);padding:5px 10px;border-radius:15px;font-size:.8em}
+    .current-user-info{padding:10px 20px;background:rgba(64,64,122,.3);color:#a4b0be;font-size:.9em;text-align:center;border-bottom:1px solid #40407a}
     .messages-container{flex:1;overflow-y:auto;padding:20px;background:#1a1a2e;scroll-behavior:smooth}
     .message{margin-bottom:15px;animation:slideInUp .3s ease-out}
     @keyframes slideInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -36,39 +22,26 @@
     .message.own .message-info{color:#ddd}
     .message:not(.own) .message-info{color:#a4b0be}
     .typing-indicator{padding:10px 20px;font-style:italic;color:#a4b0be;font-size:.9em;background:rgba(64,64,122,.3);margin:0 20px;border-radius:10px;display:none}
-    .input-container{
-      padding:16px;background:#2c2c54;border-top:1px solid #40407a;
-      display:grid;grid-template-columns:minmax(90px,120px) 1fr minmax(64px,84px);
-      gap:10px;align-items:center;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
-    }
-    .username-input,.message-input{
-      border:2px solid #40407a;border-radius:25px;background:#1a1a2e;color:#fff;outline:none;transition:.2s;
-      height:44px;padding:0 14px;
-    }
+    .input-container{padding:16px;background:#2c2c54;border-top:1px solid #40407a;display:grid;grid-template-columns:minmax(90px,120px) 1fr minmax(64px,84px);gap:10px;align-items:center;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px))}
+    .username-input,.message-input{border:2px solid #40407a;border-radius:25px;background:#1a1a2e;color:#fff;outline:none;transition:.2s;height:44px;padding:0 14px}
     .username-input:focus,.message-input:focus{border-color:#706fd3;box-shadow:0 0 0 3px rgba(112,111,211,.2)}
     .username-input::placeholder,.message-input::placeholder{color:#a4b0be}
-    .send-button{
-      height:44px;width:100%;min-width:0;
-      background:linear-gradient(135deg,#40407a 0%,#706fd3 100%);color:#fff;border:0;border-radius:25px;font-weight:bold;cursor:pointer;transition:.2s;
-    }
+    .send-button{height:44px;width:100%;min-width:0;background:linear-gradient(135deg,#40407a 0%,#706fd3 100%);color:#fff;border:0;border-radius:25px;font-weight:bold;cursor:pointer;transition:.2s}
     .send-button:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(112,111,211,.4)}
     .send-button:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
-    @media (max-width:420px){
-      .chat-container{height:100dvh;max-height:none;border-radius:0}
-      .input-container{grid-template-columns:1fr minmax(64px,84px)}
-      .username-input{grid-column:1 / -1}
-    }
-    .messages-container::-webkit-scrollbar{width:6px}
-    .messages-container::-webkit-scrollbar-track{background:#2c2c54;border-radius:10px}
-    .messages-container::-webkit-scrollbar-thumb{background:#40407a;border-radius:10px}
-    .messages-container::-webkit-scrollbar-thumb:hover{background:#706fd3}
+    @media (max-width:420px){.chat-container{height:100dvh;max-height:none;border-radius:0}.input-container{grid-template-columns:1fr minmax(64px,84px)}.username-input{grid-column:1 / -1}}
+    .messages-container::-webkit-scrollbar{width:6px}.messages-container::-webkit-scrollbar-track{background:#2c2c54;border-radius:10px}.messages-container::-webkit-scrollbar-thumb{background:#40407a;border-radius:10px}.messages-container::-webkit-scrollbar-thumb:hover{background:#706fd3}
   </style>
+
+  <!-- Yjs / y-webrtc UMD: GitHub Pages(https)에서 로드됨 -->
+  <script src="https://unpkg.com/yjs@13.6.15/dist/yjs.umd.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/y-webrtc@10.3.17/dist/y-webrtc.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="chat-container">
     <div class="chat-header">
       💬 실시간 채팅방
-      <div class="online-count">접속자: <span id="userCount">1</span>명</div>
+      <div class="online-count">접속자: <span id="userCount">0</span>명</div>
     </div>
 
     <div class="current-user-info">
@@ -79,178 +52,129 @@
     <div class="typing-indicator" id="typingIndicator"></div>
 
     <div class="input-container">
-      <input type="text" class="username-input" id="usernameInput" placeholder="닉네임" maxlength="10" />
+      <input type="text" class="username-input" id="usernameInput" placeholder="닉네임" maxlength="12" />
       <input type="text" class="message-input" id="messageInput" placeholder="메시지를 입력하세요..." maxlength="500" />
       <button class="send-button" id="sendButton" type="button">전송</button>
     </div>
   </div>
 
   <script>
-    class ChatApp {
-      constructor() {
-        this.messages = [];
-        this.users = new Set();
-        this.currentUser = '';
-        this.typingUsers = new Set();
-        this.typingTimeout = null;
-
-        this.TTL_MS = 60 * 60 * 1000; // 1시간
-
-        this.messagesContainer = document.getElementById('messages');
-        this.messageInput = document.getElementById('messageInput');
-        this.usernameInput = document.getElementById('usernameInput');
-        this.sendButton = document.getElementById('sendButton');
-        this.userCount = document.getElementById('userCount');
-        this.typingIndicator = document.getElementById('typingIndicator');
-        this.currentUserDisplay = document.getElementById('currentUserDisplay');
-
-        this.bind();
-        this.loadStoredData();
-        this.setupExpiryWatcher();
+    (function(){
+      if (!window.Y || !window.ywebrtc) {
+        alert('라이브러리 로드 실패. https에서 다시 열기 또는 CDN 접속 확인.');
+        return;
       }
 
-      bind(){
-        this.sendButton.addEventListener('click', () => this.sendMessage());
-        this.messageInput.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') this.sendMessage(); else this.handleTyping();
+      const TTL_MS = 60 * 60 * 1000; // 1시간
+      const room = location.hash.slice(1) || 'lobby';
+
+      // Yjs Doc + WebRTC provider
+      const ydoc = new Y.Doc();
+      const provider = new ywebrtc.WebrtcProvider(room, ydoc, {
+        signaling: ['wss://signaling.yjs.dev','wss://y-webrtc-signaling-eu.herokuapp.com']
+      });
+      const ymsgs = ydoc.getArray('messages');
+
+      // Elements
+      const $msgs = document.getElementById('messages');
+      const $msg = document.getElementById('messageInput');
+      const $name = document.getElementById('usernameInput');
+      const $send = document.getElementById('sendButton');
+      const $count = document.getElementById('userCount');
+      const $typing = document.getElementById('typingIndicator');
+      const $me = document.getElementById('currentUserDisplay');
+
+      // Nick
+      const NKEY = 'chat.nick';
+      let nick = localStorage.getItem(NKEY) || '';
+      if (!nick) { nick = `사용자${Math.floor(Math.random()*1000)}`; localStorage.setItem(NKEY, nick); }
+      $name.value = nick; $me.textContent = nick;
+      $name.addEventListener('input', e => {
+        nick = (e.target.value || '').trim() || `사용자${Math.floor(Math.random()*1000)}`;
+        localStorage.setItem(NKEY, nick);
+        $me.textContent = nick;
+        provider.awareness.setLocalStateField('user', { name: nick });
+      });
+
+      // Awareness: user + typing
+      provider.awareness.setLocalStateField('user', { name: nick });
+      function updatePeers(){
+        const states = Array.from(provider.awareness.getStates().values());
+        const names = states.map(s => s?.user?.name || '익명');
+        $count.textContent = names.length;
+        const typers = states.filter(s => s?.typing && s.clientId !== provider.awareness.clientID)
+                             .map(s => s?.user?.name || '익명');
+        if (typers.length) {
+          $typing.textContent = typers.length === 1 ? `${typers[0]}님이 입력 중...` : `${typers.length}명이 입력 중...`;
+          $typing.style.display = 'block';
+        } else $typing.style.display = 'none';
+      }
+      provider.awareness.on('update', updatePeers);
+      updatePeers();
+
+      // Render
+      function escapeHtml(t){ const d=document.createElement('div'); d.textContent=t||''; return d.innerHTML; }
+      function renderAll(){
+        $msgs.innerHTML = '';
+        ymsgs.toArray().forEach(m => appendMsg(m));
+        $msgs.scrollTop = $msgs.scrollHeight;
+      }
+      function appendMsg(m){
+        const el = document.createElement('div');
+        const own = m.username === nick;
+        el.className = `message ${own ? 'own' : ''}`;
+        el.innerHTML = `
+          <div class="message-bubble">${escapeHtml(m.text)}</div>
+          <div class="message-info">${own ? '나' : escapeHtml(m.username)} • ${new Date(m.ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</div>
+        `;
+        $msgs.appendChild(el);
+      }
+
+      // Observe remote changes
+      ymsgs.observe(e => {
+        e.changes.delta.forEach(d => {
+          if (d.insert) d.insert.forEach(m => appendMsg(m));
         });
-        this.messageInput.addEventListener('input', () => this.handleTyping());
-        this.usernameInput.addEventListener('input', (e) => {
-          this.currentUser = e.target.value.trim();
-          this.updateCurrentUserDisplay();
-          this.saveToStorage();
-        });
-        window.addEventListener('beforeunload', () => this.removeUser(this.currentUser));
-        window.addEventListener('storage', (e) => {
-          if (e.key === 'chatUpdate') this.loadStoredData(false);
-          if (e.key === 'chatPurge') this.onPurgeSignal();
-        });
-      }
+        $msgs.scrollTop = $msgs.scrollHeight;
+      });
 
-      // ===== 만료(1시간) 관리 =====
-      setupExpiryWatcher(){
-        this.maybeExpire();
-        this.expiryTimer = setInterval(() => this.maybeExpire(), 60 * 1000); // 1분마다 확인
+      // Prune >1h (모든 피어가 주기적으로 시도해도 안전)
+      function prune(){
+        const now = Date.now();
+        const arr = ymsgs.toArray();
+        let cut = 0;
+        while (cut < arr.length && now - arr[cut].ts > TTL_MS) cut++;
+        if (cut > 0) ymsgs.delete(0, cut);
       }
-      maybeExpire(){
-        const exp = parseInt(localStorage.getItem('chatExpiresAt') || '0', 10);
-        if (exp && Date.now() > exp) this.purgeStorage();
+      setInterval(prune, 60_000);
+      prune();
+
+      // Send
+      function send(){
+        const text = $msg.value.trim();
+        if (!text) return;
+        const msg = { id: crypto.randomUUID(), text, username: nick, ts: Date.now() };
+        ymsgs.push([msg]);
+        $msg.value = '';
+        setTyping(false);
       }
-      purgeStorage(){
-        localStorage.removeItem('chatMessages');
-        localStorage.removeItem('chatUsers');
-        localStorage.removeItem('chatExpiresAt');
-        localStorage.setItem('chatPurge', String(Date.now())); // 다른 탭에 알림
-        this.messages = [];
-        this.users = new Set();
-        if (this.currentUser) this.users.add(this.currentUser);
-        this.renderMessages();
-        this.updateUserCount();
-      }
-      onPurgeSignal(){
-        this.messages = [];
-        this.users = new Set();
-        if (this.currentUser) this.users.add(this.currentUser);
-        this.renderMessages();
-        this.updateUserCount();
-      }
-      // ==========================
+      $send.addEventListener('click', send);
+      $msg.addEventListener('keypress', e => { if (e.key === 'Enter') send(); else setTyping(true); });
+      $msg.addEventListener('input', () => setTyping(true));
 
-      loadStoredData(broadcast=true){
-        const storedMessages = localStorage.getItem('chatMessages');
-        const storedUsers = localStorage.getItem('chatUsers');
-        const storedUsername = localStorage.getItem('chatUsername');
-
-        if (storedMessages) this.messages = JSON.parse(storedMessages);
-        if (storedUsers) this.users = new Set(JSON.parse(storedUsers));
-        if (storedUsername){
-          this.currentUser = storedUsername;
-          this.usernameInput.value = storedUsername;
-        }
-        if (!this.currentUser){
-          this.currentUser = `사용자${Math.floor(Math.random()*1000)}`;
-          this.usernameInput.value = this.currentUser;
-        }
-        this.users.add(this.currentUser);
-
-        this.renderMessages();
-        this.updateUserCount();
-        this.updateCurrentUserDisplay();
-        if (broadcast) this.saveToStorage();
-      }
-
-      saveToStorage(){
-        localStorage.setItem('chatMessages', JSON.stringify(this.messages));
-        localStorage.setItem('chatUsers', JSON.stringify([...this.users]));
-        localStorage.setItem('chatUsername', this.currentUser);
-        localStorage.setItem('chatExpiresAt', String(Date.now() + this.TTL_MS)); // 만료시각 갱신
-        localStorage.setItem('chatUpdate', String(Date.now()));
-      }
-
-      sendMessage(){
-        const text = this.messageInput.value.trim();
-        if (!text || !this.currentUser) return;
-
-        const message = {
-          id: Date.now() + Math.random(),
-          text,
-          username: this.currentUser,
-          timestamp: new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}),
-        };
-
-        this.messages.push(message);
-        this.messageInput.value = '';
-        this.renderMessages();
-        this.saveToStorage();
-        this.clearTyping();
-      }
-
-      handleTyping(){
-        const typingUser = this.currentUser;
-        if (!typingUser) return;
-        this.showTyping(typingUser);
-        if (this.typingTimeout) clearTimeout(this.typingTimeout);
-        this.typingTimeout = setTimeout(() => this.hideTyping(typingUser), 3000);
-      }
-      showTyping(username){ this.typingUsers.add(username); this.updateTypingIndicator(); }
-      hideTyping(username){ this.typingUsers.delete(username); this.updateTypingIndicator(); }
-      clearTyping(){ this.typingUsers.clear(); this.updateTypingIndicator(); }
-      updateTypingIndicator(){
-        const others = [...this.typingUsers].filter(user => user !== this.currentUser);
-        if (others.length){
-          this.typingIndicator.textContent = others.length===1 ? `${others[0]}님이 입력 중...` : `${others.length}명이 입력 중...`;
-          this.typingIndicator.style.display = 'block';
-        } else {
-          this.typingIndicator.style.display = 'none';
+      // Typing state
+      let typingTimer = null;
+      function setTyping(on){
+        provider.awareness.setLocalStateField('typing', !!on);
+        if (on){
+          clearTimeout(typingTimer);
+          typingTimer = setTimeout(() => provider.awareness.setLocalStateField('typing', false), 3000);
         }
       }
 
-      renderMessages(){
-        this.messagesContainer.innerHTML = '';
-        this.messages.forEach(message => {
-          const wrap = document.createElement('div');
-          wrap.className = `message ${message.username === this.currentUser ? 'own' : ''}`;
-          wrap.innerHTML = `
-            <div class="message-bubble">
-              ${this.escapeHtml(message.text)}
-            </div>
-            <div class="message-info">
-              ${message.username === this.currentUser ? '나' : this.escapeHtml(message.username)} • ${message.timestamp}
-            </div>`;
-          this.messagesContainer.appendChild(wrap);
-        });
-        this.scrollToBottom();
-      }
-
-      escapeHtml(text){ const d=document.createElement('div'); d.textContent=text; return d.innerHTML; }
-      scrollToBottom(){ this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight; }
-      updateCurrentUserDisplay(){ this.currentUserDisplay.textContent = this.currentUser || '닉네임을 입력하세요'; }
-      updateUserCount(){ this.userCount.textContent = this.users.size; }
-      addUser(username){ this.users.add(username); this.updateUserCount(); this.saveToStorage(); }
-      removeUser(username){ this.users.delete(username); this.updateUserCount(); this.saveToStorage(); }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => new ChatApp());
+      // 최초 전체 렌더
+      renderAll();
+    })();
   </script>
 </body>
 </html>
