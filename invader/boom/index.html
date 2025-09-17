@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pinball Raffle — 하단 홀 진입형</title>
+  <style>
+    :root{ --bg:#0b0f14; --card:#0f1621; --muted:#8aa1b1; --text:#e6eef6; --accent:#57b3ff; --accent2:#8a6aff; --ring: rgba(87,179,255,.35); }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial; color:var(--text); background: radial-gradient(1200px 800px at 10% -10%, #142033, transparent 60%), radial-gradient(1000px 600px at 120% 0%, #1a1230, transparent 50%), var(--bg);}
+    .wrap{max-width:1080px; margin:32px auto; padding:20px}
+    .title{display:flex; align-items:center; gap:12px; margin-bottom:14px}
+    .title h1{margin:0; font-size:24px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.08); border-radius:18px; box-shadow: 0 10px 30px rgba(0,0,0,.35);}
+    .grid{display:grid; grid-template-columns: 360px 1fr; gap:18px}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
+    .panel{padding:18px}
+
+    .field-row{display:flex; gap:8px; align-items:center}
+    input[type=text]{flex:1; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.10); background:#0c121b; color:var(--text); outline:none; transition: box-shadow .2s, border-color .2s}
+    input[type=text]::placeholder{color:#6b7d8e}
+    input[type=text]:focus{border-color:var(--accent); box-shadow: 0 0 0 6px var(--ring)}
+    .btn{appearance:none; border:0; cursor:pointer; padding:12px 14px; border-radius:12px; color:#07111c; font-weight:700; background:linear-gradient(135deg, var(--accent), var(--accent2)); transition: transform .06s ease, filter .2s ease}
+    .btn:hover{filter:brightness(1.06)} .btn:active{transform:translateY(1px)}
+    .btn.secondary{background:#101826; color:var(--text); border:1px solid rgba(255,255,255,.10)}
+    .btn.ghost{background:transparent; color:var(--muted); border:1px dashed rgba(255,255,255,.20)}
+    .hint{color:var(--muted); font-size:13px; margin-top:8px}
+
+    .chip-list{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+    .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; background:#101826; border:1px solid rgba(255,255,255,.08)}
+    .dot{width:10px; height:10px; border-radius:50%}
+    .chip .remove{border:0; background:transparent; color:#8ea3b5; cursor:pointer; padding:4px; border-radius:8px}
+    .chip .remove:hover{color:#fff; background:rgba(255,255,255,.06)}
+
+    .controls{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
+
+    .board-wrap{position:relative; padding:12px}
+    .board{width:100%; aspect-ratio:3/2; background: radial-gradient(800px 500px at 30% 20%, rgba(88,180,255,.10), transparent 50%), linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.1)); border:1px solid rgba(255,255,255,.08); border-radius:18px; overflow:hidden}
+    canvas{display:block; width:100%; height:100%}
+
+    .overlay{position:absolute; inset:0; display:none; place-items:center; background: radial-gradient(600px 400px at 50% 40%, rgba(0,0,0,.35), rgba(0,0,0,.55)); backdrop-filter: blur(2px)}
+    .overlay.show{display:grid}
+    .winner-box{background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)); border:1px solid rgba(255,255,255,.18); padding:22px 26px; border-radius:16px; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,.45)}
+    .winner-title{font-size:13px; color:#b7c7d6}
+    .winner-name{margin-top:6px; font-size:26px; font-weight:900}
+
+    .row{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px}
+    .count{font-size:13px; color:#b7c7d6}
+    .hr{height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent); margin:12px 0}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 3h10l1 6-6 12-6-12 1-6z" stroke="url(#g)" stroke-width="1.5" fill="none"/><defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#57b3ff"/><stop offset="1" stop-color="#8a6aff"/></linearGradient></defs></svg>
+      <h1>Pinball Raffle · 하단 홀 진입형</h1>
+    </div>
+
+    <div class="grid card">
+      <div class="panel">
+        <div class="field-row">
+          <input id="nameInput" type="text" maxlength="32" placeholder="이름 추가 (최대 10명, 콤마로 여러 명)" />
+          <button id="addBtn" class="btn">추가</button>
+        </div>
+        <div class="row">
+          <div class="hint">Enter로 추가. 좌/우 화살표 또는 A/D로 플리퍼. 플리퍼 상단 접촉 순간 즉시 강한 반발.</div>
+          <div class="count"><span id="count">0</span>/10</div>
+        </div>
+        <div class="chip-list" id="chipList"></div>
+        <div class="hr"></div>
+        <div class="controls">
+          <button id="startBtn" class="btn">추첨 시작</button>
+          <button id="rerunBtn" class="btn secondary">다시 추첨</button>
+          <button id="resetBtn" class="btn ghost">초기화</button>
+        </div>
+      </div>
+      <div class="board-wrap">
+        <div class="board">
+          <canvas id="board"></canvas>
+          <div class="overlay" id="overlay">
+            <div class="winner-box">
+              <div class="winner-title">당첨</div>
+              <div class="winner-name" id="winnerName">—</div>
+              <div class="controls" style="justify-content:center; margin-top:14px">
+                <button id="copyBtn" class="btn secondary">이름 복사</button>
+                <button id="hideBtn" class="btn ghost">닫기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Utilities =====
+    const $ = (sel) => document.querySelector(sel);
+    const rand = (a,b) => a + Math.random()*(b-a);
+    const choice = (arr) => arr[Math.floor(Math.random()*arr.length)];
+
+    const COLORS = ['#5ad3ff','#7cf3b5','#ffcd70','#ff8aa5','#c49cff','#9bd2ff','#7ee0ff','#9cf2c9','#ffc773','#ff9db3'];
+
+    // ===== State & Elements =====
+    const state = { names:[], balls:[], bumpers:[], running:false, winnerIdx:null, confetti:[], scale:1, flippers:[], hole:null };
+    const nameInput=$('#nameInput'), chipList=$('#chipList'), countEl=$('#count');
+    const addBtn=$('#addBtn'), startBtn=$('#startBtn'), rerunBtn=$('#rerunBtn'), resetBtn=$('#resetBtn');
+    const overlay=$('#overlay'), winnerNameEl=$('#winnerName'), copyBtn=$('#copyBtn'), hideBtn=$('#hideBtn');
+
+    const canvas=$('#board'); const ctx=canvas.getContext('2d');
+    let W=960, H=640, last=0, rafId=null;
+
+    function resizeCanvas(){
+      const rect = canvas.getBoundingClientRect();
+      state.scale = Math.max(1, Math.min(2, devicePixelRatio||1));
+      W = Math.max(600, Math.floor(rect.width*state.scale)); H = Math.floor(W*2/3);
+      canvas.width=W; canvas.height=H; setupGeometry(); drawStatic();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function setupGeometry(){
+      // bumpers
+      const r = Math.floor(20*state.scale);
+      state.bumpers = [
+        {x:W*0.30, y:H*0.28, r}, {x:W*0.70, y:H*0.26, r}, {x:W*0.18, y:H*0.52, r}, {x:W*0.82, y:H*0.52, r}, {x:W*0.50, y:H*0.40, r}
+      ];
+      // flippers
+      const baseY = H - 90*state.scale; const len = 120*state.scale;
+      state.flippers = [
+        {id:0, side:'L', px: W*0.28, py: baseY, len, angle: -0.50, up: -1.45, down: -0.50, speed: 0.36, isUp:false, lock:0, cd:0},
+        {id:1, side:'R', px: W*0.72, py: baseY, len, angle: Math.PI+0.50, up: Math.PI+1.45, down: Math.PI+0.50, speed: 0.36, isUp:false, lock:0, cd:0}
+      ];
+      // hole
+      state.hole = {x: W/2, y: H - 26*state.scale, r: 22*state.scale};
+    }
+
+    function drawStatic(){
+      ctx.clearRect(0,0,W,H);
+      const grad = ctx.createLinearGradient(0,0,W,H); grad.addColorStop(0,'#0b1420'); grad.addColorStop(1,'#0e0f1a'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+      // grid
+      ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; const step=40*state.scale;
+      for(let x=step;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+      for(let y=step;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+      // bumpers
+      for(const bp of state.bumpers){
+        const g = ctx.createRadialGradient(bp.x-bp.r*0.3,bp.y-bp.r*0.3,bp.r*0.2,bp.x,bp.y,bp.r);
+        g.addColorStop(0,'rgba(87,179,255,.9)'); g.addColorStop(1,'rgba(138,106,255,.1)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(bp.x,bp.y,bp.r,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=2; ctx.stroke();
+      }
+      // floor
+      ctx.strokeStyle='rgba(255,255,255,.14)'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(0,H-40*state.scale); ctx.lineTo(W,H-40*state.scale); ctx.stroke();
+      // hole
+      const {x:cx,y:cy,r:hr}=state.hole; ctx.beginPath(); ctx.arc(cx,cy,hr,0,Math.PI*2);
+      const hg=ctx.createRadialGradient(cx,cy,hr*0.2,cx,cy,hr); hg.addColorStop(0,'#000'); hg.addColorStop(1,'#0a0f16'); ctx.fillStyle=hg; ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=2; ctx.stroke();
+      // label
+      if(!state.running){ ctx.fillStyle='rgba(255,255,255,.55)'; ctx.font=`${24*state.scale}px ui-sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(state.names.length? '시작을 누르세요' : '이름을 추가하세요', W/2, H/2); }
+      // flippers
+      for(const f of state.flippers) drawFlipper(f);
+    }
+
+    function drawFlipper(f){
+      const a=f.angle; const thick=18*state.scale; const len=f.len; const px=f.px, py=f.py;
+      const tipX = px + Math.cos(a)*len, tipY = py + Math.sin(a)*len;
+      const nx = Math.cos(a+Math.PI/2)*thick, ny = Math.sin(a+Math.PI/2)*thick;
+      ctx.fillStyle='rgba(120,200,255,.22)'; ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(px-nx*0.6, py-ny*0.6);
+      ctx.lineTo(tipX-nx, tipY-ny);
+      ctx.lineTo(tipX+nx, tipY+ny);
+      ctx.lineTo(px+nx*0.6, py+ny*0.6);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      const g = ctx.createRadialGradient(px,py,2,px,py,10*state.scale); g.addColorStop(0,'#9ad1ff'); g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(px,py,12*state.scale,0,Math.PI*2); ctx.fill();
+    }
+
+    function renderChips(){
+      chipList.innerHTML='';
+      state.names.forEach((n,i)=>{
+        const el=document.createElement('div'); el.className='chip';
+        const dot=document.createElement('span'); dot.className='dot'; dot.style.background=COLORS[i%COLORS.length];
+        const label=document.createElement('span'); label.textContent=`${i+1}. ${n}`;
+        const remove=document.createElement('button'); remove.className='remove'; remove.textContent='✕';
+        remove.onclick=()=>{ state.names.splice(i,1); syncCount(); renderChips(); };
+        el.append(dot,label,remove); chipList.append(el);
+      });
+    }
+    function syncCount(){ countEl.textContent=state.names.length; }
+    function addNames(raw){ if(!raw) return; const parts=raw.split(',').map(s=>s.trim()).filter(Boolean);
+      for(const p of parts){ if(state.names.length>=10) break; if(p && !state.names.includes(p)) state.names.push(p); }
+      nameInput.value=''; syncCount(); renderChips(); }
+
+    addBtn.onclick=()=>addNames(nameInput.value);
+    nameInput.onkeydown=(e)=>{ if(e.key==='Enter') addNames(nameInput.value); };
+
+    resetBtn.onclick=()=>{ state.names=[]; syncCount(); renderChips(); stop(); state.winnerIdx=null; state.confetti=[]; drawStatic(); };
+
+    function makeBalls(){
+      state.balls=[]; const R=Math.max(14, Math.min(22, Math.floor(24 - state.names.length)) ) * state.scale;
+      for(let i=0;i<state.names.length;i++){
+        state.balls.push({ name:state.names[i], x: rand(W*0.25,W*0.75), y: rand(10,40)*state.scale, vx: rand(-0.6,0.6)*state.scale, vy: rand(0.1,0.5)*state.scale, r:R, c: COLORS[i%COLORS.length], inHole:false, kickCD:0});
+      }
+    }
+
+    // ===== Simulation =====
+    function start(){ if(!state.names.length) return; makeBalls(); state.running=true; last=performance.now(); loop(last); }
+    function stop(){ state.running=false; if(rafId) cancelAnimationFrame(rafId); rafId=null; }
+
+    startBtn.onclick=()=>{ overlay.classList.remove('show'); start(); };
+    rerunBtn.onclick=()=>{ overlay.classList.remove('show'); start(); };
+
+    hideBtn.onclick=()=> overlay.classList.remove('show');
+    copyBtn.onclick=async()=>{ try{ await navigator.clipboard.writeText(winnerNameEl.textContent||''); copyBtn.textContent='복사됨'; setTimeout(()=>copyBtn.textContent='이름 복사',1200);}catch{} };
+
+    const keys={left:false,right:false};
+    addEventListener('keydown',e=>{ if(['ArrowLeft','a','A'].includes(e.key)) { keys.left=true; manualFlip(0); } if(['ArrowRight','d','D'].includes(e.key)) { keys.right=true; manualFlip(1); } });
+    addEventListener('keyup',e=>{ if(['ArrowLeft','a','A'].includes(e.key)) keys.left=false; if(['ArrowRight','d','D'].includes(e.key)) keys.right=false; });
+
+    function manualFlip(idx){ const f=state.flippers[idx]; if(f.lock>0) return; f.isUp=true; f.lock=12; }
+
+    function loop(t){ const dt=Math.min(32, t-last); last=t; update(dt/16); draw(); if(state.running) rafId=requestAnimationFrame(loop); }
+
+    function update(dt){
+      const g = 0.12*state.scale; const damp=0.999; const wallRest=0.92; const {hole}=state;
+
+      // flipper easing and lock timers
+      for(const f of state.flippers){
+        const target = f.isUp ? f.up : f.down;
+        f.angle += (target - f.angle) * Math.min(1, f.speed*dt);
+        if(f.lock>0){ f.lock -= 1; if(f.lock<=0) f.isUp=false; }
+        if(f.cd>0) f.cd -= 1;
+      }
+
+      // balls
+      for(const b of state.balls){
+        if(b.kickCD>0) b.kickCD -= 1;
+        if(!b.inHole){ b.vy += g*dt; }
+        b.x += b.vx*dt; b.y += b.vy*dt; b.vx *= damp; b.vy *= damp;
+        if(b.x < b.r){ b.x=b.r; b.vx=Math.abs(b.vx)*wallRest; }
+        if(b.x > W-b.r){ b.x=W-b.r; b.vx=-Math.abs(b.vx)*wallRest; }
+        if(b.y < b.r){ b.y=b.r; b.vy=Math.abs(b.vy)*wallRest; }
+        if(b.y > H-b.r){ b.y=H-b.r; b.vy=-Math.abs(b.vy)*wallRest; }
+
+        // bumpers
+        for(const p of state.bumpers){
+          const dx=b.x-p.x, dy=b.y-p.y, d=Math.hypot(dx,dy), min=b.r+p.r;
+          if(d<min){ const nx=dx/(d||1), ny=dy/(d||1); const overlap=(min-d)+0.6; b.x+=nx*overlap; b.y+=ny*overlap; const vdot=b.vx*nx+b.vy*ny; b.vx=(b.vx-2*vdot*nx)*0.98; b.vy=(b.vy-2*vdot*ny)*0.98; b.vx+=nx*1.0; b.vy+=ny*1.0; }
+        }
+      }
+
+      // ball-ball
+      for(let i=0;i<state.balls.length;i++) for(let j=i+1;j<state.balls.length;j++){
+        const a=state.balls[i], b=state.balls[j]; const dx=b.x-a.x, dy=b.y-a.y; const d=Math.hypot(dx,dy), min=a.r+b.r;
+        if(d<min){ const nx=dx/(d||1), ny=dy/(d||1); const over=(min-d)/2+0.5; a.x-=nx*over; a.y-=ny*over; b.x+=nx*over; b.y+=ny*over; const av=a.vx*nx+a.vy*ny, bv=b.vx*nx+b.vy*ny; a.vx+=(bv-av)*nx; a.vy+=(bv-av)*ny; b.vx+=(av-bv)*nx; b.vy+=(av-bv)*ny; }
+      }
+
+      // flipper collisions with instant kick on upper section hit
+      for(const f of state.flippers){
+        const aCur=f.angle; const px=f.px, py=f.py; const tx=px+Math.cos(aCur)*f.len, ty=py+Math.sin(aCur)*f.len; const thick=16*state.scale;
+        for(const b of state.balls){ if(b.inHole) continue; 
+          const info = pointSegmentInfo(b.x,b.y,px,py,tx,ty);
+          const near = info.dist < b.r + thick*0.35;
+          const upper = info.t > 0.55; // 상단 절반만 유효
+          const falling = b.vy > 0;
+          if(near && upper && falling && b.kickCD<=0){
+            // 즉시 위로 젖히고, 위쪽 법선 방향으로 강한 임펄스
+            const aKick = f.up; f.angle = aKick; f.isUp=true; f.lock = 12; // 12프레임 유지
+            const nx = Math.cos(aKick - Math.PI/2), ny = Math.sin(aKick - Math.PI/2);
+            const kick = 12*state.scale; // 기본 킥
+            const minUp = 9*state.scale; // 최소 상승 속도
+            b.vx = nx * kick; b.vy = ny * kick;
+            b.vy = Math.min(b.vy, -minUp); // 반드시 위로
+            // 겹침 해소: 법선 방향으로 밀어냄
+            const sep = (b.r + thick*0.35 - info.dist) + 2.0; b.x += nx*sep; b.y += ny*sep;
+            b.kickCD = 8; // 재충돌 딜레이
+            continue;
+          }
+        }
+      }
+
+      // hole attraction + capture
+      for(let i=0;i<state.balls.length;i++){
+        const b=state.balls[i]; if(b.inHole) continue; const dx=state.hole.x-b.x, dy=state.hole.y-b.y; const d=Math.hypot(dx,dy);
+        if(d < state.hole.r*3.5){ b.vx += dx*0.0025*dt; b.vy += dy*0.0025*dt; }
+        if(d < state.hole.r*0.9 && b.y > H-120*state.scale){
+          b.inHole=true; state.winnerIdx=i; winnerNameEl.textContent=b.name; fireConfetti(b.x,b.y); state.running=false; overlay.classList.add('show'); break;
+        }
+      }
+    }
+
+    function draw(){
+      drawStatic();
+      // balls
+      for(let i=0;i<state.balls.length;i++){
+        const b=state.balls[i];
+        ctx.beginPath(); ctx.arc(b.x,b.y,b.r+6,0,Math.PI*2); ctx.fillStyle = i===state.winnerIdx? 'rgba(255,234,120,.35)':'rgba(87,179,255,.15)'; ctx.fill();
+        const grad=ctx.createRadialGradient(b.x-b.r*0.5,b.y-b.r*0.6,b.r*0.2,b.x,b.y,b.r); grad.addColorStop(0,'#fff'); grad.addColorStop(0.1,b.c); grad.addColorStop(1,'#0e1220');
+        ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle='rgba(0,0,0,.75)'; ctx.font=`${Math.max(10, Math.floor(b.r*0.9))}px ui-sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        const label=b.name.length>7? b.name.slice(0,7)+'…':b.name; ctx.fillText(label,b.x,b.y);
+      }
+      // confetti fade step
+      for(const c of state.confetti){ ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.rot); ctx.fillStyle=c.color; ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h); ctx.restore(); }
+    }
+
+    function pointSegmentInfo(px,py,x1,y1,x2,y2){
+      const vx=x2-x1, vy=y2-y1; const wx=px-x1, wy=py-y1; const c1=wx*vx+wy*vy; const c2=vx*vx+vy*vy; const t=c2? Math.max(0,Math.min(1,c1/c2)):0; const projx=x1+t*vx, projy=y1+t*vy; const dist=Math.hypot(px-projx,py-projy); return {dist,t,projx,projy};
+    }
+
+    function fireConfetti(cx,cy){
+      const colors=['#ffd166','#06d6a0','#118ab2','#ef476f','#8338ec','#f72585'];
+      for(let i=0;i<160;i++) state.confetti.push({x:cx+rand(-20,20), y:cy+rand(-20,20), vx:rand(-2.5,2.5)*state.scale, vy:rand(-4,-1)*state.scale, vr:rand(-0.1,0.1), rot:rand(0,Math.PI*2), w:rand(4,8)*state.scale, h:rand(8,14)*state.scale, color:choice(colors), life:rand(40,70)});
+      const fade = ()=>{ for(const c of state.confetti){ c.vy += 0.04*state.scale; c.x+=c.vx; c.y+=c.vy; c.rot+=c.vr; c.life-=1; } state.confetti=state.confetti.filter(c=>c.life>0 && c.y< H+40); if(state.confetti.length) requestAnimationFrame(fade); }; fade();
+    }
+
+    // init
+    resizeCanvas(); setupGeometry(); drawStatic();
+  </script>
+</body>
+</html>
