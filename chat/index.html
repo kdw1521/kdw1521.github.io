@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>실시간 채팅</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+      background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+      height:100vh;display:flex;align-items:center;justify-content:center;
+    }
+    .chat-container{
+      background:#2c2c54;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.3);
+      width:100%;max-width:500px;height:80vh;max-height:600px;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,.1);
+    }
+    .chat-header{
+      background:linear-gradient(135deg,#40407a 0%,#2c2c54 100%);color:#fff;padding:20px;text-align:center;font-weight:bold;font-size:1.2em;position:relative;
+    }
+    .online-count{
+      position:absolute;right:20px;top:50%;transform:translateY(-50%);
+      background:rgba(255,255,255,.2);padding:5px 10px;border-radius:15px;font-size:.8em;
+    }
+    .current-user-info{
+      padding:10px 20px;background:rgba(64,64,122,.3);color:#a4b0be;font-size:.9em;text-align:center;border-bottom:1px solid #40407a
+    }
+    .messages-container{flex:1;overflow-y:auto;padding:20px;background:#1a1a2e;scroll-behavior:smooth}
+    .message{margin-bottom:15px;animation:slideInUp .3s ease-out}
+    @keyframes slideInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .message.own{text-align:right}
+    .message-bubble{display:inline-block;max-width:80%;padding:12px 16px;border-radius:18px;word-wrap:break-word}
+    .message.own .message-bubble{background:linear-gradient(135deg,#40407a 0%,#706fd3 100%);color:#fff;border-bottom-right-radius:5px}
+    .message:not(.own) .message-bubble{background:#2c2c54;border:1px solid #40407a;border-bottom-left-radius:5px;box-shadow:0 2px 5px rgba(0,0,0,.2);color:#f1f2f6}
+    .message-info{font-size:.7em;margin-top:5px;opacity:.7}
+    .message.own .message-info{color:#ddd}
+    .message:not(.own) .message-info{color:#a4b0be}
+    .typing-indicator{padding:10px 20px;font-style:italic;color:#a4b0be;font-size:.9em;background:rgba(64,64,122,.3);margin:0 20px;border-radius:10px;display:none}
+    .input-container{
+      padding:16px;background:#2c2c54;border-top:1px solid #40407a;
+      display:grid;grid-template-columns:minmax(90px,120px) 1fr minmax(64px,84px);
+      gap:10px;align-items:center;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+    .username-input,.message-input{
+      border:2px solid #40407a;border-radius:25px;background:#1a1a2e;color:#fff;outline:none;transition:.2s;
+      height:44px;padding:0 14px;
+    }
+    .username-input:focus,.message-input:focus{border-color:#706fd3;box-shadow:0 0 0 3px rgba(112,111,211,.2)}
+    .username-input::placeholder,.message-input::placeholder{color:#a4b0be}
+    .send-button{
+      height:44px;width:100%;min-width:0;
+      background:linear-gradient(135deg,#40407a 0%,#706fd3 100%);color:#fff;border:0;border-radius:25px;font-weight:bold;cursor:pointer;transition:.2s;
+    }
+    .send-button:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(112,111,211,.4)}
+    .send-button:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+    @media (max-width:420px){
+      .chat-container{height:100dvh;max-height:none;border-radius:0}
+      .input-container{grid-template-columns:1fr minmax(64px,84px)}
+      .username-input{grid-column:1 / -1}
+    }
+    .messages-container::-webkit-scrollbar{width:6px}
+    .messages-container::-webkit-scrollbar-track{background:#2c2c54;border-radius:10px}
+    .messages-container::-webkit-scrollbar-thumb{background:#40407a;border-radius:10px}
+    .messages-container::-webkit-scrollbar-thumb:hover{background:#706fd3}
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      💬 실시간 채팅방
+      <div class="online-count">접속자: <span id="userCount">1</span>명</div>
+    </div>
+
+    <div class="current-user-info">
+      현재 사용자: <span id="currentUserDisplay">닉네임을 입력하세요</span>
+    </div>
+
+    <div class="messages-container" id="messages"></div>
+    <div class="typing-indicator" id="typingIndicator"></div>
+
+    <div class="input-container">
+      <input type="text" class="username-input" id="usernameInput" placeholder="닉네임" maxlength="10" />
+      <input type="text" class="message-input" id="messageInput" placeholder="메시지를 입력하세요..." maxlength="500" />
+      <button class="send-button" id="sendButton" type="button">전송</button>
+    </div>
+  </div>
+
+  <script>
+    class ChatApp {
+      constructor() {
+        this.messages = [];
+        this.users = new Set();
+        this.currentUser = '';
+        this.typingUsers = new Set();
+        this.typingTimeout = null;
+
+        this.TTL_MS = 60 * 60 * 1000; // 1시간
+
+        this.messagesContainer = document.getElementById('messages');
+        this.messageInput = document.getElementById('messageInput');
+        this.usernameInput = document.getElementById('usernameInput');
+        this.sendButton = document.getElementById('sendButton');
+        this.userCount = document.getElementById('userCount');
+        this.typingIndicator = document.getElementById('typingIndicator');
+        this.currentUserDisplay = document.getElementById('currentUserDisplay');
+
+        this.bind();
+        this.loadStoredData();
+        this.setupExpiryWatcher();
+      }
+
+      bind(){
+        this.sendButton.addEventListener('click', () => this.sendMessage());
+        this.messageInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.sendMessage(); else this.handleTyping();
+        });
+        this.messageInput.addEventListener('input', () => this.handleTyping());
+        this.usernameInput.addEventListener('input', (e) => {
+          this.currentUser = e.target.value.trim();
+          this.updateCurrentUserDisplay();
+          this.saveToStorage();
+        });
+        window.addEventListener('beforeunload', () => this.removeUser(this.currentUser));
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'chatUpdate') this.loadStoredData(false);
+          if (e.key === 'chatPurge') this.onPurgeSignal();
+        });
+      }
+
+      // ===== 만료(1시간) 관리 =====
+      setupExpiryWatcher(){
+        this.maybeExpire();
+        this.expiryTimer = setInterval(() => this.maybeExpire(), 60 * 1000); // 1분마다 확인
+      }
+      maybeExpire(){
+        const exp = parseInt(localStorage.getItem('chatExpiresAt') || '0', 10);
+        if (exp && Date.now() > exp) this.purgeStorage();
+      }
+      purgeStorage(){
+        localStorage.removeItem('chatMessages');
+        localStorage.removeItem('chatUsers');
+        localStorage.removeItem('chatExpiresAt');
+        localStorage.setItem('chatPurge', String(Date.now())); // 다른 탭에 알림
+        this.messages = [];
+        this.users = new Set();
+        if (this.currentUser) this.users.add(this.currentUser);
+        this.renderMessages();
+        this.updateUserCount();
+      }
+      onPurgeSignal(){
+        this.messages = [];
+        this.users = new Set();
+        if (this.currentUser) this.users.add(this.currentUser);
+        this.renderMessages();
+        this.updateUserCount();
+      }
+      // ==========================
+
+      loadStoredData(broadcast=true){
+        const storedMessages = localStorage.getItem('chatMessages');
+        const storedUsers = localStorage.getItem('chatUsers');
+        const storedUsername = localStorage.getItem('chatUsername');
+
+        if (storedMessages) this.messages = JSON.parse(storedMessages);
+        if (storedUsers) this.users = new Set(JSON.parse(storedUsers));
+        if (storedUsername){
+          this.currentUser = storedUsername;
+          this.usernameInput.value = storedUsername;
+        }
+        if (!this.currentUser){
+          this.currentUser = `사용자${Math.floor(Math.random()*1000)}`;
+          this.usernameInput.value = this.currentUser;
+        }
+        this.users.add(this.currentUser);
+
+        this.renderMessages();
+        this.updateUserCount();
+        this.updateCurrentUserDisplay();
+        if (broadcast) this.saveToStorage();
+      }
+
+      saveToStorage(){
+        localStorage.setItem('chatMessages', JSON.stringify(this.messages));
+        localStorage.setItem('chatUsers', JSON.stringify([...this.users]));
+        localStorage.setItem('chatUsername', this.currentUser);
+        localStorage.setItem('chatExpiresAt', String(Date.now() + this.TTL_MS)); // 만료시각 갱신
+        localStorage.setItem('chatUpdate', String(Date.now()));
+      }
+
+      sendMessage(){
+        const text = this.messageInput.value.trim();
+        if (!text || !this.currentUser) return;
+
+        const message = {
+          id: Date.now() + Math.random(),
+          text,
+          username: this.currentUser,
+          timestamp: new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}),
+        };
+
+        this.messages.push(message);
+        this.messageInput.value = '';
+        this.renderMessages();
+        this.saveToStorage();
+        this.clearTyping();
+      }
+
+      handleTyping(){
+        const typingUser = this.currentUser;
+        if (!typingUser) return;
+        this.showTyping(typingUser);
+        if (this.typingTimeout) clearTimeout(this.typingTimeout);
+        this.typingTimeout = setTimeout(() => this.hideTyping(typingUser), 3000);
+      }
+      showTyping(username){ this.typingUsers.add(username); this.updateTypingIndicator(); }
+      hideTyping(username){ this.typingUsers.delete(username); this.updateTypingIndicator(); }
+      clearTyping(){ this.typingUsers.clear(); this.updateTypingIndicator(); }
+      updateTypingIndicator(){
+        const others = [...this.typingUsers].filter(user => user !== this.currentUser);
+        if (others.length){
+          this.typingIndicator.textContent = others.length===1 ? `${others[0]}님이 입력 중...` : `${others.length}명이 입력 중...`;
+          this.typingIndicator.style.display = 'block';
+        } else {
+          this.typingIndicator.style.display = 'none';
+        }
+      }
+
+      renderMessages(){
+        this.messagesContainer.innerHTML = '';
+        this.messages.forEach(message => {
+          const wrap = document.createElement('div');
+          wrap.className = `message ${message.username === this.currentUser ? 'own' : ''}`;
+          wrap.innerHTML = `
+            <div class="message-bubble">
+              ${this.escapeHtml(message.text)}
+            </div>
+            <div class="message-info">
+              ${message.username === this.currentUser ? '나' : this.escapeHtml(message.username)} • ${message.timestamp}
+            </div>`;
+          this.messagesContainer.appendChild(wrap);
+        });
+        this.scrollToBottom();
+      }
+
+      escapeHtml(text){ const d=document.createElement('div'); d.textContent=text; return d.innerHTML; }
+      scrollToBottom(){ this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight; }
+      updateCurrentUserDisplay(){ this.currentUserDisplay.textContent = this.currentUser || '닉네임을 입력하세요'; }
+      updateUserCount(){ this.userCount.textContent = this.users.size; }
+      addUser(username){ this.users.add(username); this.updateUserCount(); this.saveToStorage(); }
+      removeUser(username){ this.users.delete(username); this.updateUserCount(); this.saveToStorage(); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => new ChatApp());
+  </script>
+</body>
+</html>
