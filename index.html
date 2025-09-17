@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>대충살아</title>
   <meta name="description" content="귀찮은게 싫은 wando" />
+
+  <!-- Favicon & PWA manifest -->
+  <link rel="icon" href="assets/icons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
+  <link rel="manifest" href="./site.webmanifest">
+  <meta name="theme-color" content="#0b1020">
+
   <style>
     :root {
       --bg: #0b1020;
@@ -29,7 +38,7 @@
     .sub { color: var(--muted); font-size: 14px; margin-top: 1rem; margin-bottom: 1rem; }
 
     /* 토글 그룹 */
-    details.group { border: 1px solid rgba(255,255,255,.06); border-radius: 16px; background: var(--card); box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+    details.group { border: 1px solid rgba(255,255,255,.06); border-radius: 16px; background: var(--card); box-shadow: 0 8px 24px rgba(0,0,0,.28); margin-bottom: 1rem; }
     details.group[open] { box-shadow: 0 12px 32px rgba(8,20,60,.45); }
     details.group > summary { cursor: pointer; list-style: none; user-select: none; padding: 18px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     details.group > summary::-webkit-details-marker { display: none; }
@@ -106,6 +115,27 @@
             <span>추첨</span>
           </div>
           <p class="desc">실시간 당첨자 랜덤 선택</p>
+        </a>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>
+        <div class="summary-title">
+          <span class="icon" aria-hidden="true">🤩</span>
+          <span>이미지 변환</span>
+        </div>
+        <span class="chev">▾</span>
+      </summary>
+      <div class="grid" role="list">
+        <!-- 1) webp to png/jpg -->
+        <a class="card" role="listitem" href="img/webp/index.html" target="_blank" rel="noopener" aria-label="webp to png/jpg 새 창으로 열기">
+          <div class="badge">카테고리 · 이미지 변환</div>
+          <div class="title">
+            <span class="icon" aria-hidden="true">😲</span>
+            <span>webp to png/jpg</span>
+          </div>
+          <p class="desc">이미지 변환 화면으로 이동</p>
         </a>
       </div>
     </details>
