@@ -30,7 +30,7 @@
     <textarea id="a" placeholder="한 줄당 하나의 이메일을 붙여넣기"></textarea>
 
     <label for="b">신청자</label>
-    <textarea id="b" placeholder="한 줄당 하나의 이메일을 붙여넣기"></textarea>
+    <textarea id="b" placeholder="한 줄당 하나의 엑셀 row 붙여넣기"></textarea>
 
     <div class="controls">
       <button id="run" class="primary">겹치는것 찾기</button>
@@ -43,7 +43,7 @@
   </div>
 
   <script>
-    // 간단한 이메일 파서: 줄바꿈/쉼표 기준 분리, 불필요 문자 제거, 유효 이메일만 통과
+    // 결제자: 이메일만 붙여넣는 영역
     function parseEmails(text){
       const chunks = text.split(/[\r\n,]+/);
       const out = [];
@@ -57,35 +57,53 @@
       return out;
     }
     const toLowerSet = arr => new Set(arr.map(v => v.toLowerCase()));
-    function intersect(aSet, bSet){
-      const out = new Set();
-      for (const v of aSet) if (bSet.has(v)) out.add(v);
-      return out;
+
+    // 신청자: 한 줄에 "이메일 [탭/공백] 기타컬럼..." 형태
+    function parseApplicants(text){
+      const lines = text.split(/\r?\n/);
+      const emailRe = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/; // 첫 이메일만
+      const entries = []; // 입력 순서 유지
+      const emailSet = new Set();
+      for (const raw of lines){
+        if (!raw.trim()) continue;
+        const m = raw.match(emailRe);
+        if (!m) continue;
+        const email = m[0];
+        const lower = email.toLowerCase();
+        entries.push({ lower, line: raw });
+        emailSet.add(lower);
+      }
+      return { entries, emailSet };
     }
 
+    function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
     function run(){
-      const a = parseEmails(document.getElementById('a').value);
-      const b = parseEmails(document.getElementById('b').value);
+      const aInput = document.getElementById('a').value;
+      const bInput = document.getElementById('b').value;
 
-      const aSet = toLowerSet(a);
-      const bSet = toLowerSet(b);
-      const dupLower = intersect(aSet, bSet);
+      const aSet = toLowerSet(parseEmails(aInput));               // 결제자 고유 이메일
+      const { entries, emailSet: bEmailSet } = parseApplicants(bInput); // 신청자 라인+이메일
 
-      // 원문 보존: 첫 등장 원문을 매핑
-      const original = new Map();
-      for (const e of [...a, ...b]){
-        const k = e.toLowerCase();
-        if (!original.has(k)) original.set(k, e);
+      // 입력 순서를 유지하여 매칭 라인만 수집
+      const matches = [];
+      for (const { lower, line } of entries){
+        if (aSet.has(lower)) matches.push({ email: lower, line });
       }
-      const dups = [...dupLower].map(k => original.get(k)).sort((x,y)=>x.localeCompare(y));
 
       const result = document.getElementById('result');
-      result.innerHTML = dups.length
-        ? dups.map(e => `<span class="red">${e}</span>`).join('\n')
-        : '겹치는 이메일 없음';
+      if (matches.length){
+        // 라인 내 첫 이메일만 강조
+        const html = matches.map(({ email, line }) =>
+          line.replace(new RegExp(escapeRegExp(email), 'i'), '<span class="red">$&</span>')
+        ).join('\n');
+        result.innerHTML = html;
+      } else {
+        result.textContent = '겹치는 이메일 없음';
+      }
 
       document.getElementById('stats').textContent =
-        `A: ${aSet.size} · B: ${bSet.size} · 겹치는 것: ${dupLower.size}`;
+        `A(결제자): ${aSet.size} · B(신청자 이메일): ${bEmailSet.size} · 겹치는 것: ${matches.length}`;
     }
 
     function clearAll(){
@@ -98,5 +116,6 @@
     document.getElementById('run').addEventListener('click', run);
     document.getElementById('clear').addEventListener('click', clearAll);
   </script>
+
 </body>
 </html>
