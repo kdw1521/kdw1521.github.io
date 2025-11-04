@@ -21,14 +21,15 @@
     label{display:block;font-weight:600;margin:12px 0 8px}
     textarea{width:100%;min-height:220px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:#fff;resize:vertical;line-height:1.5;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
     .row{display:grid;grid-template-columns:1fr;gap:16px}
-    .controls{display:flex;gap:10px;align-items:center;margin:14px 0 18px}
+    .controls{display:flex;gap:10px;align-items:center;margin:14px 0 18px;flex-wrap:wrap}
     button{cursor:pointer;border:0;border-radius:10px;padding:10px 16px;font-weight:700}
     .primary{background:#111;color:#fff}
     .ghost{background:#e9eef5;color:#111}
     .stats{font-size:12px;color:#666;margin-left:auto}
-    /* 결과 영역은 부분 색상 강조를 위해 textarea 스타일의 div 사용 */
     .output{width:100%;min-height:160px;padding:12px;border:1px solid var(--bd);border-radius:12px;background:#fff;white-space:pre-wrap;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
     .red{color:#d01717}
+    .opts{display:flex;gap:12px;align-items:center;font-size:13px;color:#333}
+    .opts input{vertical-align:middle}
   </style>
 </head>
 <body>
@@ -44,6 +45,11 @@
     <div class="controls">
       <button id="run" class="primary">겹치는것 찾기</button>
       <button id="clear" class="ghost">지우기</button>
+      <button id="copy" class="ghost">복사</button>
+      <div class="opts">
+        <label><input type="checkbox" id="onlyEmail"> 이메일만 복사</label>
+        <label><input type="checkbox" id="tabbed"> 이메일과 원본문장 탭으로 분리</label>
+      </div>
       <div id="stats" class="stats"></div>
     </div>
 
@@ -79,13 +85,31 @@
         if (!m) continue;
         const email = m[0];
         const lower = email.toLowerCase();
-        entries.push({ lower, line: raw });
+        entries.push({ lower, email, line: raw });
         emailSet.add(lower);
       }
       return { entries, emailSet };
     }
 
     function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    let lastPlain = ""; // 복사용 텍스트 버퍼
+
+    function buildCopyPayload(matches){
+      const onlyEmail = document.getElementById('onlyEmail').checked;
+      const tabbed = document.getElementById('tabbed').checked;
+
+      // mutually exclusive 처리: 둘 다 체크되면 tabbed 우선
+      if (onlyEmail && !tabbed){
+        return matches.map(m => m.email).join('\r\n');
+      }
+      if (tabbed){
+        // 이메일 \t 원본문장 → 엑셀에서 이메일과 전체 행이 2열로 분리
+        return matches.map(m => `${m.email}\t${m.line}`).join('\r\n');
+      }
+      // 기본: 원본문장 그대로 행 단위
+      return matches.map(m => m.line).join('\r\n');
+    }
 
     function run(){
       const aInput = document.getElementById('a').value;
@@ -96,8 +120,8 @@
 
       // 입력 순서를 유지하여 매칭 라인만 수집
       const matches = [];
-      for (const { lower, line } of entries){
-        if (aSet.has(lower)) matches.push({ email: lower, line });
+      for (const { lower, email, line } of entries){
+        if (aSet.has(lower)) matches.push({ email: email.toLowerCase(), line });
       }
 
       const result = document.getElementById('result');
@@ -107,8 +131,12 @@
           line.replace(new RegExp(escapeRegExp(email), 'i'), '<span class="red">$&</span>')
         ).join('\n');
         result.innerHTML = html;
+
+        // 복사용 페이로드 구성 + CRLF 정규화
+        lastPlain = buildCopyPayload(matches).replace(/\r?\n/g, '\r\n');
       } else {
         result.textContent = '겹치는 이메일 없음';
+        lastPlain = "";
       }
 
       document.getElementById('stats').textContent =
@@ -120,10 +148,42 @@
       document.getElementById('b').value = '';
       document.getElementById('result').textContent = '';
       document.getElementById('stats').textContent = '';
+      lastPlain = '';
+    }
+
+    async function copyPlain(){
+      const btn = document.getElementById('copy');
+      if (!lastPlain){
+        btn.textContent = '복사할 내용 없음';
+        setTimeout(() => btn.textContent = '복사', 900);
+        return;
+      }
+      // 안전: 모든 개행을 CRLF로 통일
+      const text = lastPlain.replace(/\r?\n/g, '\r\n');
+
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = '복사됨';
+      } catch {
+        // 폴백: 임시 textarea 이용
+        const ta = document.createElement('textarea');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.textContent = '복사됨';
+      } finally {
+        setTimeout(() => btn.textContent = '복사', 900);
+      }
     }
 
     document.getElementById('run').addEventListener('click', run);
     document.getElementById('clear').addEventListener('click', clearAll);
+    document.getElementById('copy').addEventListener('click', copyPlain);
   </script>
 
 </body>
